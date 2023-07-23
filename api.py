@@ -1,7 +1,8 @@
 import shutil
-from fastapi import FastAPI, UploadFile, File, APIRouter,Form
+from fastapi import FastAPI, UploadFile, File, APIRouter, Form, Request
 from typing import List
-from schemas import UploadVideo
+from schemas import UploadVideo, GetVideo, Message
+from starlette.responses import JSONResponse
 
 video_router = APIRouter()
 
@@ -28,8 +29,15 @@ async def info_set(info: UploadVideo):
     return info
 
 
-@video_router.get('/info')
-async def info_get():
-    title = 'Test'
-    desc = 'Description'
-    return UploadVideo(title=title, description=desc)
+@video_router.get('/video', response_model=GetVideo, responses={404: {'model': Message}})
+async def get_video():
+    user = {'id': 25, 'name': 'Petr'}
+    video = {'title': 'test', 'description': 'desc'}
+    info = GetVideo(user=user, video=video)
+    return JSONResponse(status_code=404, content=info.dict())
+
+
+@video_router.get('/test')
+async def get_test(req: Request):
+    print(req)
+    return {}
