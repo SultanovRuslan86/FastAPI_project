@@ -3,6 +3,7 @@ from fastapi import FastAPI, UploadFile, File, APIRouter, Form, Request
 from typing import List
 from schemas import UploadVideo, GetVideo, Message
 from starlette.responses import JSONResponse
+from models import Video
 
 video_router = APIRouter()
 
@@ -22,6 +23,14 @@ async def root(files: List[UploadFile] = File(...)):
             shutil.copyfileobj(image.file, buffer)
 
     return {'file_name': 'All good'}
+
+
+@video_router.post('/video_post')
+async def create_video(video: Video):
+    await video.save()
+    return video
+
+
 
 
 @video_router.post('/info')
