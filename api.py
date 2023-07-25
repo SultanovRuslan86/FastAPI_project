@@ -1,52 +1,43 @@
 import shutil
-from fastapi import FastAPI, UploadFile, File, APIRouter, Form, Request
+from uuid import uuid4
+from fastapi import FastAPI, UploadFile, File, APIRouter, Form, Request, BackgroundTasks, HTTPException
 from typing import List
 from schemas import UploadVideo, GetVideo, Message
-from starlette.responses import JSONResponse
-from models import Video
+# from starlette.responses import JSONResponse
+from models import Video, User
+from services import save_video
+from starlette.responses import StreamingResponse
 
 video_router = APIRouter()
 
 @video_router.post('/')
-async def root(title: str = Form(...), description: str = Form(...), file: UploadFile = File(...)):
-    info = UploadVideo(title=title, description=description)
-    with open(f'{file.filename}', 'wb') as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    return {'file_name': file.filename, 'info': info}
-
-
-@video_router.post('/photos')
-async def root(files: List[UploadFile] = File(...)):
-    for image in files:
-        with open(f'{image.filename}', 'wb') as buffer:
-            shutil.copyfileobj(image.file, buffer)
-
-    return {'file_name': 'All good'}
-
-
-@video_router.post('/video_post')
-async def create_video(video: Video):
-    await video.save()
-    return video
+async def create_video(
+    background_tasks: BackgroundTasks,
+    title: str = Form(...),
+    description: str = Form(...),
+    file: UploadFile = File(...),
+):
+    user = await User.objects.first()
+    print(user)
+    return await save_video(user, file, title, description, background_tasks)
 
 
 
-
-@video_router.post('/info')
-async def info_set(info: UploadVideo):
-    return info
-
-
-@video_router.get('/video', response_model=GetVideo, responses={404: {'model': Message}})
-async def get_video():
-    user = {'id': 25, 'name': 'Petr'}
-    video = {'title': 'test', 'description': 'desc'}
-    info = GetVideo(user=user, video=video)
-    return JSONResponse(status_code=404, content=info.dict())
+# @video_router.post('/video_post')
+# async def create_video(video: Video):
+#     await video.save()
+#     return video
 
 
-@video_router.get('/test')
-async def get_test(req: Request):
-    print(req)
-    return {}
+# @video_router.post('/user_create')
+# async def create_user(user: User):
+#     await user.save()
+#     return user
+
+
+
+@video_router.get('/video/{video_pk}', responses={404: {'model': Message}})
+async def get_video(video_pk: int):
+    file = await Video.objects.select_related('user').get(pk=video_pk)
+    file_like = open(file.dict().get('file'), mode='rb')
+    return StreamingResponse(file_like, media_type='video/mo4')
