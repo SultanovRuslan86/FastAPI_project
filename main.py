@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from api import video_router
+from video.api import video_router
 from db import database, metadata, engine
 
 

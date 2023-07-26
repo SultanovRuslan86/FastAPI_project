@@ -1,10 +1,8 @@
 import shutil
 from uuid import uuid4
-import aiofiles
 from fastapi import UploadFile, BackgroundTasks
 from schemas import UploadVideo
-from models import Video
-
+from video.models import Video
 
 
 async def save_video(
